@@ -1,0 +1,57 @@
+# Carpeta de material de apoyo / archivos de referencia
+material/
+
+# Entorno y dependencias de desarrollo (Node.js, Python, etc.)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Variables de entorno y credenciales (Seguridad)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Archivos de compilación y empaquetado
+dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+
+# Python / Virtualenv (si aplica)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Archivos y carpetas del Sistema Operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+*.exe
+*.zip
+*.tar.gz
+*.rar
+
+# Configuraciones de IDEs / Editores
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Cobertura de tests y logs
+coverage/
+*.lcov
+*.log
