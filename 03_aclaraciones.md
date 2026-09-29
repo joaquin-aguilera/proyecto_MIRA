@@ -1,0 +1,7 @@
+# Registro de Aclaraciones y Validaciones del Cliente
+
+**Pregunta 1 (Agente/Desarrollo):** El criterio AC-F5-01 indica que los umbrales se modifican directamente en la base de datos. ¿No requiere validación previa según la Entrega 1?
+**Respuesta (Max Latuz - Rep. del Cliente):** Es incorrecto aplicarlo de inmediato. Se debe corregir la especificación para cumplir con el RNF-05 y el CU-03: el cambio debe quedar en estado "pendiente" y el sistema debe interrumpir la publicación hasta registrar una firma electrónica válida del Oficial de Cumplimiento. Además, según RNF-02, se debe registrar el valor histórico anterior.
+
+**Pregunta 2 (Agente/Desarrollo):** El criterio AC-F4-01 exige usar siempre la última configuración de F5. ¿Qué ocurre con los casos que están en plena evaluación asincrónica cuando el Oficial de Cumplimiento firma un nuevo umbral?
+**Respuesta (Max Latuz - Rep. del Cliente):** Ese criterio debe rechazarse y reescribirse. Según el RF-05 de la Bitácora, se deben aislar estrictamente los casos vigentes para que culminen bajo las reglas y umbrales de la versión con la que iniciaron. F4 debe leer la versión del umbral atada al caso, no simplemente el último registro activo en MongoDB.
