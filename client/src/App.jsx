@@ -387,34 +387,38 @@ export default function App() {
         <div className="card">
           <div className="card-title">Historial de Políticas Archivadas y Decisiones (Auditoría inalterable)</div>
           <div className="table-container">
-            <table>
+            <table style={{ tableLayout: 'fixed', width: '100%' }}>
               <thead>
                 <tr>
-                  <th>Versión</th>
-                  <th>Rangos</th>
-                  <th>Autor Original</th>
-                  <th>Estado / Resolución</th>
-                  <th>Fecha de Registro</th>
+                  <th style={{ width: '12%' }}>Versión</th>
+                  <th style={{ width: '15%' }}>Rangos</th>
+                  <th style={{ width: '18%' }}>Autor Original</th>
+                  <th style={{ width: '38%' }}>Estado / Resolución</th>
+                  <th style={{ width: '17%', textAlign: 'right' }}>Fecha Registro</th>
                 </tr>
               </thead>
               <tbody>
                 {historial.map((h) => (
                   <tr key={h._id}>
-                    <td>Versión {h.version}</td>
+                    <td><strong>Versión {h.version}</strong></td>
                     <td>≥ {h.umbral_aprobacion} / ≤ {h.umbral_rechazo}</td>
-                    <td>{h.autor_modificacion}</td>
-                    <td>
+                    <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {h.autor_modificacion}
+                    </td>
+                    <td style={{ wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: '1.4', fontSize: '0.85rem' }}>
                       {h.estado_publicacion === 'RECHAZADO' ? (
                         <span style={{ color: '#F87171', fontWeight: 600 }}>
-                          ✕ RECHAZADO: {h.motivo_rechazo}
+                          ✕ RECHAZADO: <span style={{ fontWeight: 400, color: '#FCA5A5' }}>{h.motivo_rechazo}</span>
                         </span>
                       ) : (
-                        <span style={{ color: '#34D399' }}>
-                          ✓ APROBADO por {h.firma_cumplimiento?.firmado_por || 'Sistema'}
+                        <span style={{ color: '#34D399', fontWeight: 600 }}>
+                          ✓ APROBADO <span style={{ fontWeight: 400, color: '#A7F3D0' }}>(Firma: {h.firma_cumplimiento?.firmado_por || 'Sistema'})</span>
                         </span>
                       )}
                     </td>
-                    <td>{new Date(h.updatedAt).toLocaleString()}</td>
+                    <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      {new Date(h.updatedAt).toLocaleString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -446,13 +450,19 @@ export default function App() {
             </p>
 
             <div className="form-group">
-              <label>Motivo del Rechazo:</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                <label style={{ margin: 0 }}>Motivo del Rechazo:</label>
+                <span style={{ fontSize: '0.75rem', color: motivoRechazoTexto.length >= 300 ? '#EF4444' : 'var(--text-muted)' }}>
+                  {motivoRechazoTexto.length} / 300 caracteres
+                </span>
+              </div>
               <textarea
                 rows={4}
+                maxLength={300}
                 value={motivoRechazoTexto}
                 onChange={(e) => setMotivoRechazoTexto(e.target.value)}
                 style={{ resize: 'vertical' }}
-                placeholder="Especifique las razones del rechazo..."
+                placeholder="Especifique las razones del rechazo (máximo 300 caracteres)..."
                 required
               />
             </div>
@@ -476,6 +486,7 @@ export default function App() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
