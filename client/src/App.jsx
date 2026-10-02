@@ -10,7 +10,11 @@ export default function App() {
 
   // Rol Activo en la Interfaz (Separación de Perfiles)
   const [rolActivo, setRolActivo] = useState('ADMIN'); // 'ADMIN' (Diseñador de Riesgo) o 'CUMPLIMIENTO' (Oficial)
-  const [motivoRechazo, setMotivoRechazo] = useState('La política incrementa excesivamente el riesgo operativo de la aseguradora.');
+  
+  // Estado para Modal de Rechazo Integrado
+  const [modalRechazoAbierto, setModalRechazoAbierto] = useState(false);
+  const [propuestaIdARechazar, setPropuestaIdARechazar] = useState(null);
+  const [motivoRechazoTexto, setMotivoRechazoTexto] = useState('La política incrementa excesivamente el riesgo operativo de la aseguradora sin respaldo actuarial suficiente.');
 
   // Estados del Formulario (Admin)
   const [aprobacion, setAprobacion] = useState(85);
@@ -123,24 +127,34 @@ export default function App() {
     }
   };
 
-  // Manejador para rechazar propuesta de umbral (PATCH /api/umbrales/:id/rechazar - CU-03 Flujo 5a)
-  const handleRechazar = async (id) => {
-    const motivo = prompt('Ingrese el motivo formal del rechazo normativo:', motivoRechazo);
-    if (!motivo) return;
+  // Abrir Modal de Rechazo
+  const abrirModalRechazo = (id) => {
+    setPropuestaIdARechazar(id);
+    setModalRechazoAbierto(true);
+  };
+
+  // Confirmar Rechazo en el Modal
+  const confirmarRechazo = async () => {
+    if (!motivoRechazoTexto.trim()) {
+      alert('Debe ingresar un motivo formal de rechazo.');
+      return;
+    }
 
     try {
-      const res = await fetch(`${API_BASE}/umbrales/${id}/rechazar`, {
+      const res = await fetch(`${API_BASE}/umbrales/${propuestaIdARechazar}/rechazar`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           oficial_cumplimiento: oficial,
-          motivo_rechazo: motivo
+          motivo_rechazo: motivoRechazoTexto
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        setMensajeExito('Propuesta rechazada por el Oficial de Cumplimiento. Producción permanece intacta.');
+        setMensajeExito('Propuesta formalmente rechazada por Cumplimiento. Producción permanece intacta.');
+        setModalRechazoAbierto(false);
+        setPropuestaIdARechazar(null);
         setTimeout(() => setMensajeExito(''), 6000);
         cargarDatos();
       } else {
@@ -347,7 +361,7 @@ export default function App() {
                             ✓ Firmar y Desplegar
                           </button>
                           <button
-                            onClick={() => handleRechazar(p._id)}
+                            onClick={() => abrirModalRechazo(p._id)}
                             className="btn btn-primary"
                             style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', backgroundColor: '#DC2626' }}
                           >
@@ -379,8 +393,8 @@ export default function App() {
                   <th>Versión</th>
                   <th>Rangos</th>
                   <th>Autor Original</th>
-                  <th>Estado / Firma</th>
-                  <th>Fecha de Cierre</th>
+                  <th>Estado / Resolución</th>
+                  <th>Fecha de Registro</th>
                 </tr>
               </thead>
               <tbody>
@@ -391,12 +405,16 @@ export default function App() {
                     <td>{h.autor_modificacion}</td>
                     <td>
                       {h.estado_publicacion === 'RECHAZADO' ? (
-                        <span style={{ color: 'var(--danger)', fontWeight: 600 }}>RECHAZADO: {h.motivo_rechazo}</span>
+                        <span style={{ color: '#F87171', fontWeight: 600 }}>
+                          ✕ RECHAZADO: {h.motivo_rechazo}
+                        </span>
                       ) : (
-                        <span style={{ color: 'var(--success)' }}>Firmado por: {h.firma_cumplimiento?.firmado_por}</span>
+                        <span style={{ color: '#34D399' }}>
+                          ✓ APROBADO por {h.firma_cumplimiento?.firmado_por || 'Sistema'}
+                        </span>
                       )}
                     </td>
-                    <td>{new Date(h.updatedAt).toLocaleDateString()}</td>
+                    <td>{new Date(h.updatedAt).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -404,7 +422,62 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* MODAL INTEGRADO DE RECHAZO NORMATIVO */}
+      {modalRechazoAbierto && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div className="card" style={{ maxWidth: '550px', width: '90%', border: '1px solid #DC2626' }}>
+            <div className="card-title" style={{ color: '#F87171' }}>
+              <span>🛡️ Rechazo Normativo de Cumplimiento</span>
+              <span className="badge badge-danger">CU-03 Flujo 5a</span>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              Como Oficial de Cumplimiento, declare formalmente el motivo legal, técnico o actuarial por el cual esta propuesta no puede ser desplegada en producción.
+            </p>
+
+            <div className="form-group">
+              <label>Motivo del Rechazo:</label>
+              <textarea
+                rows={4}
+                value={motivoRechazoTexto}
+                onChange={(e) => setMotivoRechazoTexto(e.target.value)}
+                style={{ resize: 'vertical' }}
+                placeholder="Especifique las razones del rechazo..."
+                required
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
+              <button 
+                onClick={() => setModalRechazoAbierto(false)} 
+                className="btn"
+                style={{ background: '#374151', color: '#fff' }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmarRechazo} 
+                className="btn"
+                style={{ backgroundColor: '#DC2626', color: '#fff' }}
+              >
+                Confirmar Rechazo y Archivar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 

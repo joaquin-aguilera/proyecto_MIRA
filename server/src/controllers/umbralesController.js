@@ -7,12 +7,14 @@ const Auditoria = require('../models/Auditoria');
  * Soporta: SPEC-F5, AC-F5-01, AC-F5-02, AC-F5-03, RNF-02, RNF-05, CU-03
  */
 
-// Obtener el umbral activo actual y el historial
+// Obtener el umbral activo actual y el historial (archivados y rechazados)
 exports.getUmbrales = async (req, res) => {
   try {
     const activo = await Umbral.findOne({ estado_publicacion: 'ACTIVO' }).sort({ version: -1 });
     const pendientes = await Umbral.find({ estado_publicacion: 'PENDIENTE' }).sort({ createdAt: -1 });
-    const historial = await Umbral.find({ estado_publicacion: 'ARCHIVADO' }).sort({ version: -1 });
+    const historial = await Umbral.find({ 
+      estado_publicacion: { $in: ['ARCHIVADO', 'RECHAZADO'] } 
+    }).sort({ updatedAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -24,6 +26,7 @@ exports.getUmbrales = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 };
+
 
 // Tarea 2: Proponer modificación de umbrales (POST /api/umbrales)
 // Soporta: AC-F5-01, AC-F5-02, AC-F5-03, RNF-02
