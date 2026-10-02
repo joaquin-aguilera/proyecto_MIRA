@@ -166,3 +166,57 @@ exports.firmarYPublicarUmbral = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// Tarea 3 (Flujo 5a): Desaprobar / Rechazar Propuesta de Umbral (PATCH /api/umbrales/:id/rechazar)
+// Soporta: CU-03 Flujo 5a, RNF-02, RNF-05
+exports.rechazarPropuestaUmbral = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { oficial_cumplimiento, motivo_rechazo } = req.body;
+
+    if (!oficial_cumplimiento || !motivo_rechazo) {
+      return res.status(400).json({
+        success: false,
+        error: 'Debe especificar la identificacion del Oficial de Cumplimiento y el motivo del rechazo.'
+      });
+    }
+
+    const propuesta = await Umbral.findById(id);
+    if (!propuesta) {
+      return res.status(404).json({ success: false, error: 'Propuesta de umbral no encontrada.' });
+    }
+
+    if (propuesta.estado_publicacion !== 'PENDIENTE') {
+      return res.status(400).json({
+        success: false,
+        error: `La propuesta ya se encuentra en estado ${propuesta.estado_publicacion}.`
+      });
+    }
+
+    propuesta.estado_publicacion = 'RECHAZADO';
+    propuesta.motivo_rechazo = motivo_rechazo;
+    await propuesta.save();
+
+    // Registrar en Auditoría inalterable (RNF-02)
+    await Auditoria.create({
+      entidad: 'UMBRAL',
+      entidad_id: propuesta._id.toString(),
+      accion: 'PROPUESTA_RECHAZADA_POR_CUMPLIMIENTO',
+      autor: oficial_cumplimiento,
+      detalles: {
+        version_rechazada: propuesta.version,
+        motivo: motivo_rechazo,
+        fecha: new Date()
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      mensaje: `Propuesta de umbral Version ${propuesta.version} rechazada exitosamente. Produccion permanece intacta.`,
+      data: propuesta
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
