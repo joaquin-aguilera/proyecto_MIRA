@@ -34,9 +34,14 @@ const UmbralSchema = new mongoose.Schema({
   },
   estado_publicacion: {
     type: String,
-    enum: ['PENDIENTE', 'ACTIVO', 'ARCHIVADO'],
+    enum: ['PENDIENTE', 'ACTIVO', 'ARCHIVADO', 'RECHAZADO'],
     default: 'PENDIENTE'
   },
+  motivo_rechazo: {
+    type: String,
+    default: null
+  },
+
   autor_modificacion: {
     type: String,
     required: true

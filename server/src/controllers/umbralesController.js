@@ -7,12 +7,14 @@ const Auditoria = require('../models/Auditoria');
  * Soporta: SPEC-F5, AC-F5-01, AC-F5-02, AC-F5-03, RNF-02, RNF-05, CU-03
  */
 
-// Obtener el umbral activo actual y el historial
+// Obtener el umbral activo actual y el historial (archivados y rechazados)
 exports.getUmbrales = async (req, res) => {
   try {
     const activo = await Umbral.findOne({ estado_publicacion: 'ACTIVO' }).sort({ version: -1 });
     const pendientes = await Umbral.find({ estado_publicacion: 'PENDIENTE' }).sort({ createdAt: -1 });
-    const historial = await Umbral.find({ estado_publicacion: 'ARCHIVADO' }).sort({ version: -1 });
+    const historial = await Umbral.find({ 
+      estado_publicacion: { $in: ['ARCHIVADO', 'RECHAZADO'] } 
+    }).sort({ updatedAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -24,6 +26,7 @@ exports.getUmbrales = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 };
+
 
 // Tarea 2: Proponer modificación de umbrales (POST /api/umbrales)
 // Soporta: AC-F5-01, AC-F5-02, AC-F5-03, RNF-02
@@ -106,7 +109,8 @@ exports.proponerUmbral = async (req, res) => {
 exports.firmarYPublicarUmbral = async (req, res) => {
   try {
     const { id } = req.params;
-    const { oficial_cumplimiento, token_firma } = req.body;
+    const oficial_cumplimiento = req.body.oficial_cumplimiento || req.body.firmado_por;
+    const token_firma = req.body.token_firma || req.body.token_autorizacion;
 
     if (!oficial_cumplimiento || !token_firma) {
       return res.status(400).json({
@@ -166,3 +170,58 @@ exports.firmarYPublicarUmbral = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// Tarea 3 (Flujo 5a): Desaprobar / Rechazar Propuesta de Umbral (PATCH /api/umbrales/:id/rechazar)
+// Soporta: CU-03 Flujo 5a, RNF-02, RNF-05
+exports.rechazarPropuestaUmbral = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const oficial_cumplimiento = req.body.oficial_cumplimiento || req.body.rechazado_por;
+    const motivo_rechazo = req.body.motivo_rechazo;
+
+    if (!oficial_cumplimiento || !motivo_rechazo) {
+      return res.status(400).json({
+        success: false,
+        error: 'Debe especificar la identificacion del Oficial de Cumplimiento y el motivo del rechazo.'
+      });
+    }
+
+    const propuesta = await Umbral.findById(id);
+    if (!propuesta) {
+      return res.status(404).json({ success: false, error: 'Propuesta de umbral no encontrada.' });
+    }
+
+    if (propuesta.estado_publicacion !== 'PENDIENTE') {
+      return res.status(400).json({
+        success: false,
+        error: `La propuesta ya se encuentra en estado ${propuesta.estado_publicacion}.`
+      });
+    }
+
+    propuesta.estado_publicacion = 'RECHAZADO';
+    propuesta.motivo_rechazo = motivo_rechazo;
+    await propuesta.save();
+
+    // Registrar en Auditoría inalterable (RNF-02)
+    await Auditoria.create({
+      entidad: 'UMBRAL',
+      entidad_id: propuesta._id.toString(),
+      accion: 'PROPUESTA_RECHAZADA_POR_CUMPLIMIENTO',
+      autor: oficial_cumplimiento,
+      detalles: {
+        version_rechazada: propuesta.version,
+        motivo: motivo_rechazo,
+        fecha: new Date()
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      mensaje: `Propuesta de umbral Version ${propuesta.version} rechazada exitosamente. Produccion permanece intacta.`,
+      data: propuesta
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+

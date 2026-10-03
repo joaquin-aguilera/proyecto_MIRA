@@ -12,7 +12,8 @@
     },
     "resultado_esperado": {
       "puntaje_obtenido": 90.5,
-      "estado_decision": "APROBADO"
+      "estado_decision": "APROBADO",
+      "verificacion_criterio": "PF-01 / RF-01"
     }
   },
   "caso_02": {
@@ -28,7 +29,9 @@
     },
     "resultado_esperado": {
       "puntaje_obtenido": 75.0,
-      "estado_decision": "DERIVADO"
+      "estado_decision": "DERIVADO",
+      "motivo": "Puntaje intermedio en zona de revisión",
+      "verificacion_criterio": "PF-02 / RF-02"
     }
   },
   "caso_02_minimo_incumplido": {
@@ -43,7 +46,9 @@
       "senal_fraude_activa": false
     },
     "resultado_esperado": {
-      "estado_decision": "DERIVADO"
+      "estado_decision": "DERIVADO",
+      "motivo": "Señal identidad (55) menor al mínimo propio exigido (60)",
+      "verificacion_criterio": "RF-02"
     }
   },
   "caso_03": {
@@ -58,7 +63,9 @@
       "senal_fraude_activa": true
     },
     "resultado_esperado": {
-      "estado_decision": "RECHAZADO"
+      "estado_decision": "RECHAZADO",
+      "motivo": "Precedencia de fraude activo: Se ignora puntaje global y se rechaza inmediatamente",
+      "verificacion_criterio": "RF-02 / CU-01 / SPEC-F4"
     }
   }
 }

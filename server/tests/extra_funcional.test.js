@@ -25,12 +25,11 @@ beforeEach(async () => {
   process.env.NODE_ENV = 'test';
 });
 
-describe('Pruebas Extra-Funcionales Automatizadas (RNF-02, RNF-05, DEC-01)', () => {
+describe('Pruebas Extra-Funcionales Automatizadas (RNF-02, RNF-05, DEC-01) - Tarea 6', () => {
 
   // PX-02: Seguridad y Auditoría inalterable (RNF-02 / DEC-01)
   describe('PX-02 [RNF-02 / DEC-01]: Inalterabilidad Estricta de la Colección de Auditoría (Append-Only)', () => {
     test('PX-02: Intentos programáticos de modificar (updateOne) un registro de auditoría son bloqueados', async () => {
-      // 1. Crear un registro de auditoría legítimo
       const registro = await Auditoria.create({
         entidad: 'UMBRAL',
         entidad_id: 'TEST-ENTIDAD-001',
@@ -39,18 +38,15 @@ describe('Pruebas Extra-Funcionales Automatizadas (RNF-02, RNF-05, DEC-01)', () 
         detalles: { valor: 85 }
       });
 
-      // 2. Intentar modificar programáticamente el registro con updateOne
       await expect(
         Auditoria.updateOne({ _id: registro._id }, { $set: { autor: 'Atacante Malicioso' } })
       ).rejects.toThrow('VIOLACION_RNF_02');
 
-      // 3. Verificar que el registro permanezca intacto en la base de datos
       const registroVerificado = await Auditoria.findById(registro._id);
       expect(registroVerificado.autor).toBe('Max Latuz');
     });
 
     test('PX-02: Intentos programáticos de eliminar (deleteOne) un registro de auditoría son bloqueados', async () => {
-      // 1. Crear un registro de auditoría legítimo
       const registro = await Auditoria.create({
         entidad: 'CASO',
         entidad_id: 'CASO-AUDIT-001',
@@ -59,12 +55,10 @@ describe('Pruebas Extra-Funcionales Automatizadas (RNF-02, RNF-05, DEC-01)', () 
         detalles: { estado_decision: 'APROBADO' }
       });
 
-      // 2. Intentar eliminar programáticamente el registro con deleteOne
       await expect(
         Auditoria.deleteOne({ _id: registro._id })
       ).rejects.toThrow('VIOLACION_RNF_02');
 
-      // 3. Verificar que el registro aún existe en la base de datos
       const registroExiste = await Auditoria.findById(registro._id);
       expect(registroExiste).not.toBeNull();
     });
@@ -98,7 +92,7 @@ describe('Pruebas Extra-Funcionales Automatizadas (RNF-02, RNF-05, DEC-01)', () 
         .patch(`/api/umbrales/${propuesta._id}/firma`)
         .send({
           oficial_cumplimiento: 'Oficial de Cumplimiento MIRA',
-          token_firma: 'TOKEN-OFICIAL-SECURE-2026'
+          token_firma: 'SIG-TOKEN-MIRA-2026'
         });
 
       expect(resValido.statusCode).toBe(200);
