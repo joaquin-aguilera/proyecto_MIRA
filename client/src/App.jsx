@@ -3,12 +3,30 @@ import React, { useState, useEffect } from 'react';
 const API_BASE = 'http://localhost:5000/api';
 
 export default function App() {
+  // Estados para Umbrales y Gobernanza F5
   const [activo, setActivo] = useState(null);
   const [pendientes, setPendientes] = useState([]);
   const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  // Estados para Simulador de Casos F4
+  // Perfil Operativo (Simulación de Roles)
+  const [rolActivo, setRolActivo] = useState('ADMIN'); // 'ADMIN' (Diseñador) o 'CUMPLIMIENTO' (Oficial)
+  const [autor, setAutor] = useState('Max Latuz (Diseñador)');
+  const [oficial, setOficial] = useState('Max Latuz (Oficial Cumplimiento)');
+  const [tokenFirma, setTokenFirma] = useState('FIRM-OFICIAL-SEC-2026-X');
+
+  // Formulario de Propuesta F5
+  const [aprobacion, setAprobacion] = useState(80);
+  const [rechazo, setRechazo] = useState(40);
+  const [errorValidacion, setErrorValidacion] = useState('');
+  const [mensajeExito, setMensajeExito] = useState('');
+
+  // Modal de Rechazo Normativo (CU-03 Flujo 5a)
+  const [modalRechazoAbierto, setModalRechazoAbierto] = useState(false);
+  const [idRechazoActual, setIdRechazoActual] = useState(null);
+  const [motivoRechazoTexto, setMotivoRechazoTexto] = useState('');
+
+  // Estados para Visor y Evaluador de Casos F4
   const [casoSeleccionado, setCasoSeleccionado] = useState('caso_01');
   const [resultadoF4, setResultadoF4] = useState(null);
   const [evaluandoF4, setEvaluandoF4] = useState(false);
@@ -58,6 +76,146 @@ export default function App() {
     }
   };
 
+  // Cargar datos del backend
+  const cargarDatos = async () => {
+    try {
+      const [resActivo, resPendientes, resHistorial] = await Promise.all([
+        fetch(`${API_BASE}/umbrales/activo`),
+        fetch(`${API_BASE}/umbrales/pendientes`),
+        fetch(`${API_BASE}/umbrales/historial`)
+      ]);
+
+      const dataActivo = await resActivo.json();
+      const dataPendientes = await resPendientes.json();
+      const dataHistorial = await resHistorial.json();
+
+      if (dataActivo.success) {
+        setActivo(dataActivo.data);
+        if (dataActivo.data) {
+          setAprobacion(dataActivo.data.umbral_aprobacion);
+          setRechazo(dataActivo.data.umbral_rechazo);
+        }
+      }
+      if (dataPendientes.success) setPendientes(dataPendientes.data);
+      if (dataHistorial.success) setHistorial(dataHistorial.data);
+    } catch (err) {
+      console.error('Error al conectar con la API de MIRA:', err);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  // Validación de regla de negocio en tiempo real (AC-F5-03)
+  useEffect(() => {
+    const valAprob = Number(aprobacion);
+    const valRech = Number(rechazo);
+
+    if (valAprob <= valRech) {
+      setErrorValidacion('Inconsistencia: El Umbral de Aprobación debe ser estrictamente MAYOR que el Umbral de Rechazo.');
+    } else if (valAprob < 0 || valAprob > 100 || valRech < 0 || valRech > 100) {
+      setErrorValidacion('Rango Inválido: Los umbrales deben situarse entre 0 y 100 puntos.');
+    } else {
+      setErrorValidacion('');
+    }
+  }, [aprobacion, rechazo]);
+
+  // Manejador para proponer nuevo umbral (Pasa a PENDIENTE)
+  const handleProponer = async (e) => {
+    e.preventDefault();
+    if (errorValidacion) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/umbrales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          umbral_aprobacion: Number(aprobacion),
+          umbral_rechazo: Number(rechazo),
+          autor_modificacion: autor,
+          pesos_senales: activo ? activo.pesos_senales : { fraude: 0.4, ingresos: 0.35, identidad: 0.25 }
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setMensajeExito(`✓ Propuesta de Versión ${data.data.version} enviada a Cumplimiento.`);
+        setTimeout(() => setMensajeExito(''), 5000);
+        cargarDatos();
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert('Error de conexión al enviar la propuesta: ' + err.message);
+    }
+  };
+
+  // Manejador para firmar y activar propuesta
+  const handleFirmar = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/umbrales/${id}/firma`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firmado_por: oficial,
+          token_autorizacion: tokenFirma
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setMensajeExito(`✓ ¡Éxito! Versión ${data.data.version} aprobada y desplegada como ACTIVA en producción.`);
+        setTimeout(() => setMensajeExito(''), 5000);
+        cargarDatos();
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert('Error al firmar la política: ' + err.message);
+    }
+  };
+
+  // Manejador para abrir modal de rechazo
+  const abrirModalRechazo = (id) => {
+    setIdRechazoActual(id);
+    setMotivoRechazoTexto('');
+    setModalRechazoAbierto(true);
+  };
+
+  // Confirmar rechazo normativo (Flujo 5a)
+  const confirmarRechazo = async () => {
+    if (!motivoRechazoTexto.trim()) {
+      alert('Debe especificar un motivo legal o técnico para el rechazo.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/umbrales/${idRechazoActual}/rechazar`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          motivo_rechazo: motivoRechazoTexto,
+          rechazado_por: oficial
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setModalRechazoAbierto(false);
+        setMensajeExito(`✕ Propuesta rechazada y archivada con motivo formal.`);
+        setTimeout(() => setMensajeExito(''), 5000);
+        cargarDatos();
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert('Error al procesar el rechazo: ' + err.message);
+    }
+  };
+
   // Evaluar caso contra Motor F4 (POST /api/casos/evaluar)
   const handleEvaluarCasoF4 = async () => {
     try {
@@ -95,6 +253,15 @@ export default function App() {
       setEvaluandoF4(false);
     }
   };
+
+  if (cargando) {
+    return (
+      <div className="container" style={{ textAlign: 'center', paddingTop: '4rem' }}>
+        <h2>Conectando con la plataforma MIRA...</h2>
+        <p style={{ color: 'var(--text-muted)' }}>Cargando motor de decisiones y configuración de umbrales.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container">
@@ -556,5 +723,3 @@ export default function App() {
     </div>
   );
 }
-
-
