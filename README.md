@@ -8,7 +8,7 @@
 
 ---
 
-## 👥 1. Integrantes y Roles del Proyecto
+## 1. Integrantes y Roles del Proyecto
 
 En conformidad con la metodología **Spec-Driven Development (SDD)** y el esquema de rotación de roles para la Entrega 2:
 
@@ -19,11 +19,11 @@ En conformidad con la metodología **Spec-Driven Development (SDD)** y el esquem
 
 ---
 
-## 🚀 2. Guía de Ejecución Rápida (< 15 Minutos)
+## 2. Guía de Ejecución Rápida (< 15 Minutos)
 
 El sistema está diseñado para autoinicializarse sin dependencias externas complejas, utilizando **MongoDB Memory Server** embebido con *seeding* automático de la Versión 1 de producción.
 
-### 📋 Prerrequisitos
+### Prerrequisitos
 - **Node.js** v18.0.0 o superior ([Descargar Node.js](https://nodejs.org/)).
 - **Git** instalado en el sistema.
 
@@ -69,7 +69,7 @@ npm run dev
 
 ---
 
-## 🖥️ 3. Guía de Demostración del Incremento Funcional
+## 3. Guía de Demostración del Incremento Funcional
 
 Abre `http://localhost:3000` en tu navegador para interactuar con la plataforma:
 
@@ -81,7 +81,7 @@ Abre `http://localhost:3000` en tu navegador para interactuar con la plataforma:
 +------------------------------------+----------------------------------------------+
 |  [ Bandeja de Cumplimiento (Propuestas Pendientes de Firma - Cuatro Ojos) ]       |
 +-----------------------------------------------------------------------------------+
-|  [ ⚡ VISOR Y EVALUADOR INTERACTIVO DE CASOS DIDÁCTICOS (Motor F4 ↔ Reglas F5) ]  |
+|  [ VISOR Y EVALUADOR INTERACTIVO DE CASOS DIDÁCTICOS (Motor F4 ↔ Reglas F5) ]  |
 |  - Selector de casos didácticos (Casos 1, 2, 2B, 3)                               |
 |  - Inspector de señales de entrada y flag de fraude                               |
 |  - Ejecución algorítmica en tiempo real contra la regla activa o versionada       |
@@ -111,7 +111,7 @@ Abre `http://localhost:3000` en tu navegador para interactuar con la plataforma:
 
 ---
 
-## 📁 4. Estructura del Repositorio
+## 4. Estructura del Repositorio
 
 ```
 proyecto_MIRA/
@@ -152,7 +152,7 @@ proyecto_MIRA/
 
 ---
 
-## 🧪 5. Matriz de Cobertura de Requisitos
+## 5. Matriz de Cobertura de Requisitos
 
 | Requisito | Descripción | Implementación | Validación |
 | :--- | :--- | :--- | :--- |
@@ -165,6 +165,6 @@ proyecto_MIRA/
 
 ---
 
-## 📄 6. Licencia y Contexto Académico
+## 6. Licencia y Contexto Académico
 
 Proyecto desarrollado como parte de la evaluación de **Arquitectura y Diseño de Software Dirigido por Especificación (SDD)** para la plataforma **MIRA**.
