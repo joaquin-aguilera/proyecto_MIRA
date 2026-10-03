@@ -9,9 +9,11 @@ app.use(express.json());
 
 // Importar rutas
 const umbralesRoutes = require('./routes/umbralesRoutes');
+const casosRoutes = require('./routes/casosRoutes');
 
 // Montar endpoints de la API
 app.use('/api/umbrales', umbralesRoutes);
+app.use('/api/casos', casosRoutes);
 
 // Endpoint de verificación de salud
 app.get('/api/health', (req, res) => {

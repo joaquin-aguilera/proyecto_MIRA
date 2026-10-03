@@ -1,53 +1,71 @@
-[
-  {
-    "caso_id": "CASO-2026-001",
-    "descripcion": "Caso Didáctico 1: Aprobación Automática Directa (Alto puntaje, sin alertas de fraude)",
+{
+  "caso_01": {
+    "caso_id": "CASO-DIDACTICO-001",
+    "descripcion": "Caso 1: Aprobación directa con puntaje de 90.5 pts (PF-01 / RF-01)",
     "datos_evaluacion": {
       "senales": [
-        { "nombre": "fraude", "valor": 95, "minimo_propio": 50 },
+        { "nombre": "fraude", "valor": 95, "minimo_propio": 60 },
         { "nombre": "ingresos", "valor": 90, "minimo_propio": 60 },
-        { "nombre": "identidad", "valor": 85, "minimo_propio": 50 }
+        { "nombre": "identidad", "valor": 85, "minimo_propio": 60 }
       ],
       "senal_fraude_activa": false
     },
     "resultado_esperado": {
-      "puntaje_calculado": 90.5,
-      "decision_esperada": "APROBADO",
+      "puntaje_obtenido": 90.5,
+      "estado_decision": "APROBADO",
       "verificacion_criterio": "PF-01 / RF-01"
     }
   },
-  {
-    "caso_id": "CASO-2026-002",
-    "descripcion": "Caso Didáctico 2: Derivación a Revisión Manual (Puntaje intermedio o incumplimiento de mínimo por señal)",
+  "caso_02": {
+    "caso_id": "CASO-DIDACTICO-002",
+    "descripcion": "Caso 2: Derivado a revisión manual por puntaje intermedio de 75 pts (PF-02 / RF-02)",
     "datos_evaluacion": {
       "senales": [
-        { "nombre": "fraude", "valor": 70, "minimo_propio": 50 },
-        { "nombre": "ingresos", "valor": 45, "minimo_propio": 60 },
-        { "nombre": "identidad", "valor": 75, "minimo_propio": 50 }
+        { "nombre": "fraude", "valor": 75, "minimo_propio": 60 },
+        { "nombre": "ingresos", "valor": 80, "minimo_propio": 60 },
+        { "nombre": "identidad", "valor": 70, "minimo_propio": 60 }
       ],
       "senal_fraude_activa": false
     },
     "resultado_esperado": {
-      "decision_esperada": "DERIVADO",
-      "motivo": "Incumple minimo propio en señal de ingresos (45 < 60) o puntaje en rango intermedio",
+      "puntaje_obtenido": 75.0,
+      "estado_decision": "DERIVADO",
+      "motivo": "Puntaje intermedio en zona de revisión",
       "verificacion_criterio": "PF-02 / RF-02"
     }
   },
-  {
-    "caso_id": "CASO-2026-003",
-    "descripcion": "Caso Didáctico 3: Rechazo Inmediato por Señal de Fraude Activa (Precedencia estricta sobre puntaje)",
+  "caso_02_minimo_incumplido": {
+    "caso_id": "CASO-DIDACTICO-002-MINIMO",
+    "descripcion": "Caso 2B: Derivación automática por incumplimiento de mínimo propio en señal identidad (RF-02)",
     "datos_evaluacion": {
       "senales": [
-        { "nombre": "fraude", "valor": 10, "minimo_propio": 50 },
+        { "nombre": "fraude", "valor": 95, "minimo_propio": 60 },
+        { "nombre": "ingresos", "valor": 90, "minimo_propio": 60 },
+        { "nombre": "identidad", "valor": 55, "minimo_propio": 60 }
+      ],
+      "senal_fraude_activa": false
+    },
+    "resultado_esperado": {
+      "estado_decision": "DERIVADO",
+      "motivo": "Señal identidad (55) menor al mínimo propio exigido (60)",
+      "verificacion_criterio": "RF-02"
+    }
+  },
+  "caso_03": {
+    "caso_id": "CASO-DIDACTICO-003",
+    "descripcion": "Caso 3: Rechazo inmediato por precedencia de señal de fraude activa confirmada (CU-01 / RF-01)",
+    "datos_evaluacion": {
+      "senales": [
+        { "nombre": "fraude", "valor": 95, "minimo_propio": 60 },
         { "nombre": "ingresos", "valor": 95, "minimo_propio": 60 },
-        { "nombre": "identidad", "valor": 90, "minimo_propio": 50 }
+        { "nombre": "identidad", "valor": 95, "minimo_propio": 60 }
       ],
       "senal_fraude_activa": true
     },
     "resultado_esperado": {
-      "decision_esperada": "RECHAZADO",
+      "estado_decision": "RECHAZADO",
       "motivo": "Precedencia de fraude activo: Se ignora puntaje global y se rechaza inmediatamente",
       "verificacion_criterio": "RF-02 / CU-01 / SPEC-F4"
     }
   }
-]
+}

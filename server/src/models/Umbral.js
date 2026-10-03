@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 /**
  * Esquema de Umbrales de Decisión (F5 - SPEC-F5)
- * Soporta: RF-05, RNF-02, RNF-05, CU-03
+ * Soporta: RF-05 (versionado incremental), RNF-02 (auditoría), RNF-05 (firma), CU-03, DEC-01 (retención legal)
  */
 const UmbralSchema = new mongoose.Schema({
   version: {
@@ -59,6 +59,15 @@ const UmbralSchema = new mongoose.Schema({
   fecha_solicitud: {
     type: Date,
     default: Date.now
+  },
+  // Soporte DEC-01: Política de custodia documental y retención inalterable por 5 años
+  retencion_legal: {
+    vigencia_anios: { type: Number, default: 5, immutable: true },
+    fecha_expiracion_custodia: {
+      type: Date,
+      default: () => new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000),
+      immutable: true
+    }
   }
 }, { timestamps: true });
 

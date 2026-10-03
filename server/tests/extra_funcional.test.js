@@ -25,68 +25,78 @@ beforeEach(async () => {
   process.env.NODE_ENV = 'test';
 });
 
-describe('Suite de Pruebas Extra-Funcionales (PX) - Tarea 6 (Max Latuz)', () => {
+describe('Pruebas Extra-Funcionales Automatizadas (RNF-02, RNF-05, DEC-01) - Tarea 6', () => {
 
-  // PX-02: Seguridad y Auditoría inalterable (RNF-02, DEC-01)
-  test('PX-02 [Seguridad]: Bloquea permanentemente intentos de modificación o borrado en el rastro inalterable', async () => {
-    // 1. Insertar un registro legítimo
-    const log = await Auditoria.create({
-      entidad: 'UMBRAL',
-      entidad_id: new mongoose.Types.ObjectId().toString(),
-      accion: 'REGISTRO_INICIAL',
-      autor: 'Max Latuz',
-      detalles: { motivo: 'Prueba de inmutabilidad' }
+  // PX-02: Seguridad y Auditoría inalterable (RNF-02 / DEC-01)
+  describe('PX-02 [RNF-02 / DEC-01]: Inalterabilidad Estricta de la Colección de Auditoría (Append-Only)', () => {
+    test('PX-02: Intentos programáticos de modificar (updateOne) un registro de auditoría son bloqueados', async () => {
+      const registro = await Auditoria.create({
+        entidad: 'UMBRAL',
+        entidad_id: 'TEST-ENTIDAD-001',
+        accion: 'PROPUESTA_CREADA',
+        autor: 'Max Latuz',
+        detalles: { valor: 85 }
+      });
+
+      await expect(
+        Auditoria.updateOne({ _id: registro._id }, { $set: { autor: 'Atacante Malicioso' } })
+      ).rejects.toThrow('VIOLACION_RNF_02');
+
+      const registroVerificado = await Auditoria.findById(registro._id);
+      expect(registroVerificado.autor).toBe('Max Latuz');
     });
 
-    expect(log._id).toBeDefined();
+    test('PX-02: Intentos programáticos de eliminar (deleteOne) un registro de auditoría son bloqueados', async () => {
+      const registro = await Auditoria.create({
+        entidad: 'CASO',
+        entidad_id: 'CASO-AUDIT-001',
+        accion: 'EVALUACION_DECISION_F4',
+        autor: 'MOTOR_F4',
+        detalles: { estado_decision: 'APROBADO' }
+      });
 
-    // 2. Intentar modificar el registro (Debe ser bloqueado por middleware Mongoose)
-    await expect(
-      Auditoria.updateOne({ _id: log._id }, { $set: { autor: 'Atacante Malicioso' } })
-    ).rejects.toThrow('VIOLACION_RNF_02');
+      await expect(
+        Auditoria.deleteOne({ _id: registro._id })
+      ).rejects.toThrow('VIOLACION_RNF_02');
 
-    // 3. Intentar eliminar el registro directamente (Debe ser bloqueado)
-    await expect(
-      Auditoria.deleteOne({ _id: log._id })
-    ).rejects.toThrow('VIOLACION_RNF_02');
-
-    // 4. Verificar que el dato sigue intacto e inalterado
-    const logVerificado = await Auditoria.findById(log._id);
-    expect(logVerificado.autor).toBe('Max Latuz');
+      const registroExiste = await Auditoria.findById(registro._id);
+      expect(registroExiste).not.toBeNull();
+    });
   });
 
   // PX-05: Seguridad y Cumplimiento (RNF-05 / CU-03)
-  test('PX-05 [Cumplimiento]: Interrumpe el despliegue productivo y exige exactamente 1 firma válida', async () => {
-    // 1. Proponer un umbral
-    const propuesta = await Umbral.create({
-      version: 1,
-      umbral_aprobacion: 85,
-      umbral_rechazo: 45,
-      autor_modificacion: 'Max Latuz',
-      estado_publicacion: 'PENDIENTE'
-    });
-
-    // 2. Comprobar que en estado PENDIENTE no se encuentra como ACTIVO
-    const umbralActivo = await Umbral.findOne({ estado_publicacion: 'ACTIVO' });
-    expect(umbralActivo).toBeNull();
-
-    // 3. Simular firma inválida o vacía
-    const resInvalida = await request(app)
-      .patch(`/api/umbrales/${propuesta._id}/firma`)
-      .send({ oficial_cumplimiento: '' });
-
-    expect(resInvalida.statusCode).toBe(400);
-
-    // 4. Estampar firma válida del Oficial de Cumplimiento
-    const resValida = await request(app)
-      .patch(`/api/umbrales/${propuesta._id}/firma`)
-      .send({
-        oficial_cumplimiento: 'Oficial de Cumplimiento MIRA',
-        token_firma: 'SIG-TOKEN-MIRA-2026'
+  describe('PX-05 [RNF-05 / CU-03]: Interrupción de Despliegue sin Firma de Cumplimiento', () => {
+    test('PX-05: Interrumpe activación productiva si falta token o firma del Oficial de Cumplimiento', async () => {
+      const propuesta = await Umbral.create({
+        version: 1,
+        umbral_aprobacion: 90,
+        umbral_rechazo: 60,
+        autor_modificacion: 'Max Latuz',
+        estado_publicacion: 'PENDIENTE'
       });
 
-    expect(resValida.statusCode).toBe(200);
-    expect(resValida.body.data.estado_publicacion).toBe('ACTIVO');
-  });
+      // Intento sin credenciales de cumplimiento
+      const resInvalido = await request(app)
+        .patch(`/api/umbrales/${propuesta._id}/firma`)
+        .send({ oficial_cumplimiento: '' });
 
+      expect(resInvalido.statusCode).toBe(400);
+      expect(resInvalido.body.error).toContain('Violacion RNF-05');
+
+      // Umbral debe permanecer PENDIENTE
+      const umbralSinCambios = await Umbral.findById(propuesta._id);
+      expect(umbralSinCambios.estado_publicacion).toBe('PENDIENTE');
+
+      // Despliegue productivo exitoso con token válido
+      const resValido = await request(app)
+        .patch(`/api/umbrales/${propuesta._id}/firma`)
+        .send({
+          oficial_cumplimiento: 'Oficial de Cumplimiento MIRA',
+          token_firma: 'SIG-TOKEN-MIRA-2026'
+        });
+
+      expect(resValido.statusCode).toBe(200);
+      expect(resValido.body.data.estado_publicacion).toBe('ACTIVO');
+    });
+  });
 });
