@@ -1,0 +1,64 @@
+{
+  "caso_01": {
+    "caso_id": "CASO-DIDACTICO-001",
+    "descripcion": "Caso 1: Aprobación directa con puntaje de 90.5 pts (PF-01 / RF-01)",
+    "datos_evaluacion": {
+      "senales": [
+        { "nombre": "fraude", "valor": 95, "minimo_propio": 60 },
+        { "nombre": "ingresos", "valor": 90, "minimo_propio": 60 },
+        { "nombre": "identidad", "valor": 85, "minimo_propio": 60 }
+      ],
+      "senal_fraude_activa": false
+    },
+    "resultado_esperado": {
+      "puntaje_obtenido": 90.5,
+      "estado_decision": "APROBADO"
+    }
+  },
+  "caso_02": {
+    "caso_id": "CASO-DIDACTICO-002",
+    "descripcion": "Caso 2: Derivado a revisión manual por puntaje intermedio de 75 pts (PF-02 / RF-02)",
+    "datos_evaluacion": {
+      "senales": [
+        { "nombre": "fraude", "valor": 75, "minimo_propio": 60 },
+        { "nombre": "ingresos", "valor": 80, "minimo_propio": 60 },
+        { "nombre": "identidad", "valor": 70, "minimo_propio": 60 }
+      ],
+      "senal_fraude_activa": false
+    },
+    "resultado_esperado": {
+      "puntaje_obtenido": 75.0,
+      "estado_decision": "DERIVADO"
+    }
+  },
+  "caso_02_minimo_incumplido": {
+    "caso_id": "CASO-DIDACTICO-002-MINIMO",
+    "descripcion": "Caso 2B: Derivación automática por incumplimiento de mínimo propio en señal identidad (RF-02)",
+    "datos_evaluacion": {
+      "senales": [
+        { "nombre": "fraude", "valor": 95, "minimo_propio": 60 },
+        { "nombre": "ingresos", "valor": 90, "minimo_propio": 60 },
+        { "nombre": "identidad", "valor": 55, "minimo_propio": 60 }
+      ],
+      "senal_fraude_activa": false
+    },
+    "resultado_esperado": {
+      "estado_decision": "DERIVADO"
+    }
+  },
+  "caso_03": {
+    "caso_id": "CASO-DIDACTICO-003",
+    "descripcion": "Caso 3: Rechazo inmediato por precedencia de señal de fraude activa confirmada (CU-01 / RF-01)",
+    "datos_evaluacion": {
+      "senales": [
+        { "nombre": "fraude", "valor": 95, "minimo_propio": 60 },
+        { "nombre": "ingresos", "valor": 95, "minimo_propio": 60 },
+        { "nombre": "identidad", "valor": 95, "minimo_propio": 60 }
+      ],
+      "senal_fraude_activa": true
+    },
+    "resultado_esperado": {
+      "estado_decision": "RECHAZADO"
+    }
+  }
+}

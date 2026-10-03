@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 /**
  * Esquema de Casos de Evaluación (F4 - SPEC-F4)
- * Soporta: RF-01, RF-02, RF-05, CU-01
+ * Soporta: RF-01, RF-02, RF-05, CU-01, DEC-01 (retención legal de expedientes por 5 años)
  */
 const CasoSchema = new mongoose.Schema({
   caso_id: {
@@ -24,7 +24,8 @@ const CasoSchema = new mongoose.Schema({
   // Campo clave para aislamiento en caliente (RF-05 / PF-05)
   version_umbral_aplicada: {
     type: Number,
-    required: true
+    required: true,
+    immutable: true
   },
   puntaje_obtenido: {
     type: Number,
@@ -47,7 +48,17 @@ const CasoSchema = new mongoose.Schema({
   }],
   fecha_inicio_proceso: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    immutable: true
+  },
+  // Soporte DEC-01: Política de custodia inalterable de expedientes por 5 años
+  retencion_legal: {
+    vigencia_anios: { type: Number, default: 5, immutable: true },
+    fecha_expiracion_custodia: {
+      type: Date,
+      default: () => new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000),
+      immutable: true
+    }
   }
 }, { timestamps: true });
 
