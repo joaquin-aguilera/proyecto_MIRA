@@ -8,160 +8,91 @@ export default function App() {
   const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  // Rol Activo en la Interfaz (Separación de Perfiles)
-  const [rolActivo, setRolActivo] = useState('ADMIN'); // 'ADMIN' (Diseñador de Riesgo) o 'CUMPLIMIENTO' (Oficial)
-  
-  // Estado para Modal de Rechazo Integrado
-  const [modalRechazoAbierto, setModalRechazoAbierto] = useState(false);
-  const [propuestaIdARechazar, setPropuestaIdARechazar] = useState(null);
-  const [motivoRechazoTexto, setMotivoRechazoTexto] = useState('La política incrementa excesivamente el riesgo operativo de la aseguradora sin respaldo actuarial suficiente.');
+  // Estados para Simulador de Casos F4
+  const [casoSeleccionado, setCasoSeleccionado] = useState('caso_01');
+  const [resultadoF4, setResultadoF4] = useState(null);
+  const [evaluandoF4, setEvaluandoF4] = useState(false);
+  const [versionFijadaManual, setVersionFijadaManual] = useState('');
 
-  // Estados del Formulario (Admin)
-  const [aprobacion, setAprobacion] = useState(85);
-  const [rechazo, setRechazo] = useState(45);
-  const [autor, setAutor] = useState('Joaquín Aguilera (Diseñador)');
-  const [pesoFraude, setPesoFraude] = useState(0.4);
-  const [pesoIngresos, setPesoIngresos] = useState(0.3);
-  const [pesoIdentidad, setPesoIdentidad] = useState(0.3);
-
-  // Estados de Firma (Oficial de Cumplimiento)
-  const [oficial, setOficial] = useState('Max Latuz (Oficial de Cumplimiento)');
-  const [tokenFirma, setTokenFirma] = useState('SIG-TOKEN-MIRA-2026');
-
-  // Alertas
-  const [errorValidacion, setErrorValidacion] = useState('');
-  const [mensajeExito, setMensajeExito] = useState('');
-
-  // Cargar datos del Backend
-  const cargarDatos = async () => {
-    try {
-      setCargando(true);
-      const res = await fetch(`${API_BASE}/umbrales`);
-      const data = await res.json();
-      if (data.success) {
-        setActivo(data.activo);
-        setPendientes(data.pendientes);
-        setHistorial(data.historial);
-      }
-    } catch (err) {
-      console.error('Error conectando con la API:', err);
-    } finally {
-      setCargando(false);
+  // Casos didácticos predefinidos para la demo (Cap. 4.3 de la pauta)
+  const casosDidacticosDemo = {
+    caso_01: {
+      id: 'CASO-DIDACTICO-001',
+      titulo: 'Caso 1: Aprobación Directa (Señales altas: 95, 90, 85)',
+      senales: [
+        { nombre: 'fraude', valor: 95, minimo_propio: 60 },
+        { nombre: 'ingresos', valor: 90, minimo_propio: 60 },
+        { nombre: 'identidad', valor: 85, minimo_propio: 60 }
+      ],
+      fraude_activo: false
+    },
+    caso_02: {
+      id: 'CASO-DIDACTICO-002',
+      titulo: 'Caso 2: Derivado a Revisión Manual (Puntaje intermedio: 75 pts)',
+      senales: [
+        { nombre: 'fraude', valor: 75, minimo_propio: 60 },
+        { nombre: 'ingresos', valor: 80, minimo_propio: 60 },
+        { nombre: 'identidad', valor: 70, minimo_propio: 60 }
+      ],
+      fraude_activo: false
+    },
+    caso_02_minimo: {
+      id: 'CASO-DIDACTICO-002-MINIMO',
+      titulo: 'Caso 2B: Derivado por Mínimo Propio Incumplido (Identidad = 55 < 60)',
+      senales: [
+        { nombre: 'fraude', valor: 95, minimo_propio: 60 },
+        { nombre: 'ingresos', valor: 90, minimo_propio: 60 },
+        { nombre: 'identidad', valor: 55, minimo_propio: 60 }
+      ],
+      fraude_activo: false
+    },
+    caso_03: {
+      id: 'CASO-DIDACTICO-003',
+      titulo: 'Caso 3: Rechazo Directo por Precedencia de Fraude (Fraude = TRUE)',
+      senales: [
+        { nombre: 'fraude', valor: 95, minimo_propio: 60 },
+        { nombre: 'ingresos', valor: 95, minimo_propio: 60 },
+        { nombre: 'identidad', valor: 95, minimo_propio: 60 }
+      ],
+      fraude_activo: true
     }
   };
 
-  useEffect(() => {
-    cargarDatos();
-  }, []);
-
-  // Validación en vivo de regla de negocio AC-F5-03
-  useEffect(() => {
-    const numAprob = Number(aprobacion);
-    const numRech = Number(rechazo);
-
-    if (numAprob < 0 || numAprob > 100 || numRech < 0 || numRech > 100) {
-      setErrorValidacion('Los umbrales deben ubicarse estrictamente entre 0 y 100.');
-    } else if (numRech >= numAprob) {
-      setErrorValidacion('Violación AC-F5-03: El umbral de rechazo no puede ser mayor o igual al de aprobación.');
-    } else {
-      setErrorValidacion('');
-    }
-  }, [aprobacion, rechazo]);
-
-  // Manejador para proponer nuevo umbral (POST /api/umbrales - Tarea 2)
-  const handleProponer = async (e) => {
-    e.preventDefault();
-    if (errorValidacion) return;
-
+  // Evaluar caso contra Motor F4 (POST /api/casos/evaluar)
+  const handleEvaluarCasoF4 = async () => {
     try {
-      const res = await fetch(`${API_BASE}/umbrales`, {
+      setEvaluandoF4(true);
+      const caso = casosDidacticosDemo[casoSeleccionado];
+      
+      const payload = {
+        caso_id: caso.id,
+        datos_evaluacion: {
+          senales: caso.senales,
+          senal_fraude_activa: caso.fraude_activo
+        },
+        autor: rolActivo === 'ADMIN' ? autor : oficial
+      };
+
+      if (versionFijadaManual) {
+        payload.version_umbral = Number(versionFijadaManual);
+      }
+
+      const res = await fetch(`${API_BASE}/casos/evaluar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          umbral_aprobacion: Number(aprobacion),
-          umbral_rechazo: Number(rechazo),
-          autor_modificacion: autor,
-          pesos_senales: {
-            fraude: Number(pesoFraude),
-            ingresos: Number(pesoIngresos),
-            identidad: Number(pesoIdentidad)
-          }
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
       if (data.success) {
-        setMensajeExito('Propuesta registrada en estado PENDIENTE. Notificada al Oficial de Cumplimiento.');
-        setTimeout(() => setMensajeExito(''), 6000);
-        cargarDatos();
+        setResultadoF4(data.data);
       } else {
         alert(data.error);
       }
     } catch (err) {
-      alert('Error al enviar propuesta: ' + err.message);
-    }
-  };
-
-  // Manejador para firmar y activar umbral (PATCH /api/umbrales/:id/firma - Tarea 3)
-  const handleFirmar = async (id) => {
-    try {
-      const res = await fetch(`${API_BASE}/umbrales/${id}/firma`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          oficial_cumplimiento: oficial,
-          token_firma: tokenFirma
-        })
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setMensajeExito('¡Firma estampada exitosamente! Nueva política desplegada en producción (CU-03).');
-        setTimeout(() => setMensajeExito(''), 6000);
-        cargarDatos();
-      } else {
-        alert(data.error);
-      }
-    } catch (err) {
-      alert('Error en firma de cumplimiento: ' + err.message);
-    }
-  };
-
-  // Abrir Modal de Rechazo
-  const abrirModalRechazo = (id) => {
-    setPropuestaIdARechazar(id);
-    setModalRechazoAbierto(true);
-  };
-
-  // Confirmar Rechazo en el Modal
-  const confirmarRechazo = async () => {
-    if (!motivoRechazoTexto.trim()) {
-      alert('Debe ingresar un motivo formal de rechazo.');
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/umbrales/${propuestaIdARechazar}/rechazar`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          oficial_cumplimiento: oficial,
-          motivo_rechazo: motivoRechazoTexto
-        })
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setMensajeExito('Propuesta formalmente rechazada por Cumplimiento. Producción permanece intacta.');
-        setModalRechazoAbierto(false);
-        setPropuestaIdARechazar(null);
-        setTimeout(() => setMensajeExito(''), 6000);
-        cargarDatos();
-      } else {
-        alert(data.error);
-      }
-    } catch (err) {
-      alert('Error al rechazar propuesta: ' + err.message);
+      alert('Error evaluando caso en F4: ' + err.message);
+    } finally {
+      setEvaluandoF4(false);
     }
   };
 
@@ -170,7 +101,7 @@ export default function App() {
       <header>
         <div>
           <h1>MIRA — Plataforma de Inteligencia Multimodal</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Módulo F5: Gestión y Gobernanza de Reglas de Decisión</p>
+          <p style={{ color: 'var(--text-muted)' }}>Incremento Integrado: Gestión de Reglas (F5) y Motor de Decisión (F4)</p>
         </div>
         
         {/* SELECTOR DE PERFILES PARA DEMOSTRACIÓN */}
@@ -193,7 +124,7 @@ export default function App() {
         {/* COLUMNA 1: ESTADO ACTIVO ACTUAL */}
         <div className="card">
           <div className="card-title">
-            <span>Configuración Activa en Producción</span>
+            <span>Configuración Activa en Producción (F5)</span>
             {activo && <span className="badge badge-success">Versión {activo.version}</span>}
           </div>
 
@@ -380,6 +311,141 @@ export default function App() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* VISOR Y EVALUADOR INTERACTIVO: MOTOR DE DECISIÓN F4 EN VIVO */}
+      <div className="card" style={{ marginBottom: '2rem', border: '1px solid #3B82F6', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)' }}>
+        <div className="card-title" style={{ color: '#60A5FA' }}>
+          <span>⚡ Visor y Evaluador de Casos Didácticos (Motor F4 ↔ Reglas F5)</span>
+          <span className="badge badge-blue">Regla 4.2: Productor F5 → Consumidor F4</span>
+        </div>
+
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.2rem' }}>
+          Demuestra la conexión directa del incremento: El motor algorítmico F4 consume dinámicamente la versión activa de F5 (o una versión archivada para aislamiento <code>RF-05</code>) y ejecuta la evaluación multicriterio.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }}>
+          {/* LADO IZQUIERDO: SELECTOR E INSPECTOR VISUAL DE ENTRADA */}
+          <div>
+            <div className="form-group">
+              <label>Seleccionar Caso Didáctico de Prueba (Cap. 4.3):</label>
+              <select 
+                value={casoSeleccionado} 
+                onChange={(e) => { setCasoSeleccionado(e.target.value); setResultadoF4(null); }}
+                style={{ background: '#1E293B', color: '#F1F5F9', fontWeight: 600 }}
+              >
+                <option value="caso_01">Caso 1: Aprobación Directa (Puntaje alto 90.5 pts)</option>
+                <option value="caso_02">Caso 2: Derivación a Revisión Manual (Puntaje 75 pts)</option>
+                <option value="caso_02_minimo">Caso 2B: Derivación por Mínimo Propio Incumplido (Identidad 55 &lt; 60)</option>
+                <option value="caso_03">Caso 3: Rechazo Directo por Precedencia de Fraude</option>
+              </select>
+            </div>
+
+            {/* VISOR DE PARÁMETROS ENTRANTES */}
+            {casosDidacticosDemo[casoSeleccionado] && (
+              <div style={{ background: '#0F172A', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem', border: '1px solid #334155' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
+                    Inspección de Entrada ({casosDidacticosDemo[casoSeleccionado].id})
+                  </span>
+                  {casosDidacticosDemo[casoSeleccionado].fraude_activo ? (
+                    <span className="badge badge-danger">⚠️ Fraude: ACTIVO</span>
+                  ) : (
+                    <span className="badge badge-success">✓ Fraude: Inactivo</span>
+                  )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', textAlign: 'center' }}>
+                  {casosDidacticosDemo[casoSeleccionado].senales.map((s) => (
+                    <div key={s.nombre} style={{ background: '#1E293B', padding: '0.4rem', borderRadius: '4px', border: s.valor < s.minimo_propio ? '1px solid #EF4444' : '1px solid #334155' }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{s.nombre}</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 700, color: s.valor < s.minimo_propio ? '#F87171' : '#60A5FA' }}>{s.valor}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Mín: {s.minimo_propio}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label>Aislamiento de Versión (RF-05 / Opcional):</label>
+              <input 
+                type="number" 
+                placeholder="Dejar vacío para usar versión activa actual" 
+                value={versionFijadaManual}
+                onChange={(e) => setVersionFijadaManual(e.target.value)}
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Permite evaluar el caso contra políticas archivadas para garantizar reproducibilidad legal.</span>
+            </div>
+
+            <button 
+              onClick={handleEvaluarCasoF4} 
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '0.75rem', fontWeight: 600, fontSize: '0.95rem' }}
+              disabled={evaluandoF4}
+            >
+              {evaluandoF4 ? 'Evaluando caso en el motor...' : '🚀 Ejecutar Evaluación en Motor F4'}
+            </button>
+          </div>
+
+          {/* LADO DERECHO: VISOR DE VEREDICTO RESULTANTE */}
+          <div style={{ background: 'var(--bg-card-subtle)', padding: '1.2rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                <h4 style={{ fontSize: '0.95rem', margin: 0, color: '#E2E8F0' }}>Veredicto Emitido por F4:</h4>
+                {resultadoF4 && (
+                  <span className="badge badge-success">Versión Aplicada: v{resultadoF4.version_umbral_aplicada}</span>
+                )}
+              </div>
+              
+              {resultadoF4 ? (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem', background: '#0F172A', padding: '0.7rem 1rem', borderRadius: '6px' }}>
+                    <span style={{ fontSize: '1.3rem', fontWeight: 800 }}>
+                      {resultadoF4.estado_decision === 'APROBADO' && <span style={{ color: 'var(--success)' }}>🟢 APROBADO</span>}
+                      {resultadoF4.estado_decision === 'DERIVADO' && <span style={{ color: 'var(--warning)' }}>🟡 DERIVADO</span>}
+                      {resultadoF4.estado_decision === 'RECHAZADO' && <span style={{ color: 'var(--danger)' }}>🔴 RECHAZADO</span>}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>| Puntaje: <strong style={{ color: '#F8FAFC' }}>{resultadoF4.puntaje_obtenido} pts</strong></span>
+                  </div>
+
+                  <div style={{ fontSize: '0.85rem', lineHeight: '1.5', color: '#CBD5E1' }}>
+                    <div style={{ marginBottom: '0.5rem' }}>
+                      <strong style={{ color: '#94A3B8' }}>Justificación / Motivo:</strong>
+                      <div style={{ background: '#1E293B', padding: '0.5rem', borderRadius: '4px', marginTop: '0.3rem', fontSize: '0.8rem', borderLeft: '3px solid #3B82F6' }}>
+                        {resultadoF4.motivo_decision}
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '0.8rem', borderTop: '1px solid var(--border)', paddingTop: '0.6rem', fontSize: '0.8rem' }}>
+                      <span style={{ color: '#94A3B8', fontWeight: 600 }}>Desglose Algorítmico ($\sum V_i \times W_i$):</span>
+                      <div style={{ marginTop: '0.3rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        {resultadoF4.desglose_senales?.map((s, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: '0.75rem', background: '#0F172A', padding: '0.2rem 0.5rem', borderRadius: '3px' }}>
+                            <span>• {s.nombre}: {s.valor_obtenido} × {(s.peso_aplicado * 100).toFixed(0)}%</span>
+                            <span style={{ color: '#60A5FA', fontWeight: 600 }}>+{s.aporte_puntaje} pts</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📊</div>
+                  <p style={{ fontSize: '0.85rem', margin: 0 }}>
+                    Seleccione un caso didáctico a la izquierda y presione <strong>"Ejecutar Evaluación"</strong> para visualizar el veredicto del motor algorítmico.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginTop: '1rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Motor: <code>POST /api/casos/evaluar</code></span>
+              <span>Inmutabilidad: <code>RNF-02</code></span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* HISTORIAL DE AUDITORÍA Y VERSIONES ANTERIORES */}
