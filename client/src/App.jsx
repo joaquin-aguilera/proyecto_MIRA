@@ -580,7 +580,7 @@ export default function App() {
                     </div>
 
                     <div style={{ marginTop: '0.8rem', borderTop: '1px solid var(--border)', paddingTop: '0.6rem', fontSize: '0.8rem' }}>
-                      <span style={{ color: '#94A3B8', fontWeight: 600 }}>Desglose Algorítmico ($\sum V_i \times W_i$):</span>
+                      <span style={{ color: '#94A3B8', fontWeight: 600 }}>Desglose Ponderado (Σ Valor × Peso):</span>
                       <div style={{ marginTop: '0.3rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                         {resultadoF4.desglose_senales?.map((s, idx) => (
                           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: '0.75rem', background: '#0F172A', padding: '0.2rem 0.5rem', borderRadius: '3px' }}>
