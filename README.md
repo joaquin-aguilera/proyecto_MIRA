@@ -1,10 +1,10 @@
-# MIRA — Multimodal Intelligence Platform for Enterprise Decisions
+# MIRA — Plataforma Inteligente Multimodal para Decicion de Empresas
 ## Entrega 2: Incremento Funcional Integrado (F5 ↔ F4)
 
-[![Test Suite](https://img.shields.io/badge/Jest%20Tests-11%2F11%20Passing-success)](file:///server/tests)
+[![Suite de pruebas](https://img.shields.io/badge/Jest%20Tests-11%2F11%20Passing-success)](file:///server/tests)
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A518.0.0-blue)](https://nodejs.org)
 [![Vite + React](https://img.shields.io/badge/Frontend-React%2018%20%2B%20Vite-61DAFB)](file:///client)
-[![Methodology](https://img.shields.io/badge/Methodology-Spec--Driven%20Development%20(SDD)-purple)](file:///specs)
+[![Metodologia](https://img.shields.io/badge/Methodology-Spec--Driven%20Development%20(SDD)-purple)](file:///specs)
 
 ---
 
