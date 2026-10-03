@@ -109,7 +109,8 @@ exports.proponerUmbral = async (req, res) => {
 exports.firmarYPublicarUmbral = async (req, res) => {
   try {
     const { id } = req.params;
-    const { oficial_cumplimiento, token_firma } = req.body;
+    const oficial_cumplimiento = req.body.oficial_cumplimiento || req.body.firmado_por;
+    const token_firma = req.body.token_firma || req.body.token_autorizacion;
 
     if (!oficial_cumplimiento || !token_firma) {
       return res.status(400).json({
@@ -175,7 +176,8 @@ exports.firmarYPublicarUmbral = async (req, res) => {
 exports.rechazarPropuestaUmbral = async (req, res) => {
   try {
     const { id } = req.params;
-    const { oficial_cumplimiento, motivo_rechazo } = req.body;
+    const oficial_cumplimiento = req.body.oficial_cumplimiento || req.body.rechazado_por;
+    const motivo_rechazo = req.body.motivo_rechazo;
 
     if (!oficial_cumplimiento || !motivo_rechazo) {
       return res.status(400).json({

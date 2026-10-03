@@ -79,25 +79,20 @@ export default function App() {
   // Cargar datos del backend
   const cargarDatos = async () => {
     try {
-      const [resActivo, resPendientes, resHistorial] = await Promise.all([
-        fetch(`${API_BASE}/umbrales/activo`),
-        fetch(`${API_BASE}/umbrales/pendientes`),
-        fetch(`${API_BASE}/umbrales/historial`)
-      ]);
+      const res = await fetch(`${API_BASE}/umbrales`);
+      const data = await res.json();
 
-      const dataActivo = await resActivo.json();
-      const dataPendientes = await resPendientes.json();
-      const dataHistorial = await resHistorial.json();
-
-      if (dataActivo.success) {
-        setActivo(dataActivo.data);
-        if (dataActivo.data) {
-          setAprobacion(dataActivo.data.umbral_aprobacion);
-          setRechazo(dataActivo.data.umbral_rechazo);
+      if (data.success) {
+        if (data.activo) {
+          setActivo(data.activo);
+          setAprobacion(data.activo.umbral_aprobacion);
+          setRechazo(data.activo.umbral_rechazo);
+        } else {
+          setActivo(null);
         }
+        if (data.pendientes) setPendientes(data.pendientes);
+        if (data.historial) setHistorial(data.historial);
       }
-      if (dataPendientes.success) setPendientes(dataPendientes.data);
-      if (dataHistorial.success) setHistorial(dataHistorial.data);
     } catch (err) {
       console.error('Error al conectar con la API de MIRA:', err);
     } finally {
